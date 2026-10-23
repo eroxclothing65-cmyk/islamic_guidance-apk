@@ -1,0 +1,6 @@
+{
+  "name": "Islamic Guidance",
+  "description": "Your Daily Companion to Islam - Complete Quran with Bengali & English translation, authentic Hadith, daily Azkar, Duas, Tasbih, and Prayer times.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

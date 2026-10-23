@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Golden Crescent Moon -->
+    <path
+        android:fillColor="#F4CA42"
+        android:pathData="M51,28 C64.8,28 76,39.2 76,53 C76,66.8 64.8,78 51,78 C43.2,78 36.3,74.3 32,68.7 C35.4,70.2 39.2,71 43.2,71 C55.3,71 65.2,61.1 65.2,49 C65.2,42.8 62.6,37.3 58.4,33.3 C56.1,30 53.6,28.8 51,28 Z" />
+    
+    <!-- 8-Point Star in Gold -->
+    <path
+        android:fillColor="#F4CA42"
+        android:pathData="M66,35 L68,39 L72,39 L69,41.5 L70,45.5 L66,43 L62,45.5 L63,41.5 L60,39 L64,39 Z" />
+
+    <!-- Open Holy Quran at base -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M40,65 L54,69 L68,65 L68,75 L54,78.5 L40,75 Z" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#0D5C3A"
+        android:strokeWidth="1.2"
+        android:pathData="M54,69 L54,78.5" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#F4CA42"
+        android:strokeWidth="0.8"
+        android:pathData="M43,67.5 Q48.5,69.5 52.5,69.5 M65,67.5 Q59.5,69.5 55.5,69.5" />
+</vector>

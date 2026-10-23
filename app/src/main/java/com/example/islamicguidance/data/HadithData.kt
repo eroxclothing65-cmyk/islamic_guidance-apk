@@ -1,0 +1,162 @@
+package com.example.islamicguidance.data
+
+object HadithData {
+    val hadiths: List<HadithItem> = listOf(
+        HadithItem(
+            id = "bukhari_1",
+            collection = "সহীহ বুখারী",
+            collectionEn = "Sahih al-Bukhari",
+            number = 1,
+            chapter = "Book of Revelation",
+            chapterBn = "ওহীর সূচনা অধ্যায়",
+            arabic = "إِنَّمَا الأَعْمَالُ بِالنِّيَّاتِ، وَإِنَّمَا لِكُلِّ امْرِئٍ مَا نَوَى",
+            bengali = "সকল কাজের ফলাফল নিয়্যতের ওপর নির্ভরশীল। প্রত্যেক ব্যক্তি তাই পাবে যার সে নিয়্যত করেছে।",
+            english = "Actions are according to intentions, and everyone will get what was intended.",
+            grade = "সহীহ (Sahih - সর্বসম্মতভাবে বিশুদ্ধ)",
+            narrator = "উমর ইবনুল খাত্তাব (রা.)",
+            category = HadithCategory.FAITH
+        ),
+        HadithItem(
+            id = "bukhari_8",
+            collection = "সহীহ বুখারী",
+            collectionEn = "Sahih al-Bukhari",
+            number = 8,
+            chapter = "Book of Faith",
+            chapterBn = "ঈমান অধ্যায়",
+            arabic = "بُنِيَ الإِسْلاَمُ عَلَى خَمْسٍ شَهَادَةِ أَنْ لاَ إِلَهَ إِلاَّ اللَّهُ وَأَنَّ مُحَمَّدًا رَسُولُ اللَّهِ، وَإِقَامِ الصَّلاَةِ، وَإِيتَاءِ الزَّكَاةِ، وَالْحَجِّ، وَصَوْمِ رَمَضَانَ",
+            bengali = "ইসলামের ভিত্তি পাঁচটি স্তম্ভের ওপর স্থাপিত: এ সাক্ষ্য দেওয়া যে, আল্লাহ ছাড়া কোন সত্য উপাস্য নেই এবং মুহাম্মদ (ﷺ) আল্লাহর রাসুল; নামাজ কায়েম করা; যাকাত আদায় করা; হজ পালন করা এবং রমজানের রোজা রাখা।",
+            english = "Islam is built upon five pillars: Testifying that there is no god but Allah and Muhammad is the Messenger of Allah, establishing prayer, paying Zakat, Hajj, and fasting Ramadan.",
+            grade = "সহীহ (Sahih)",
+            narrator = "আব্দুল্লাহ ইবনে উমর (রা.)",
+            category = HadithCategory.FAITH
+        ),
+        HadithItem(
+            id = "bukhari_528",
+            collection = "সহীহ বুখারী",
+            collectionEn = "Sahih al-Bukhari",
+            number = 528,
+            chapter = "Times of the Prayers",
+            chapterBn = "নামাজের সময় অধ্যায়",
+            arabic = "سَأَلْتُ النَّبِيَّ صلى الله عليه وسلم أَىُّ الْعَمَلِ أَحَبُّ إِلَى اللَّهِ قَالَ ‏\"‏ الصَّلاَةُ عَلَى وَقْتِهَا ‏\"‏‏.‏ قَالَ ثُمَّ أَىٌّ قَالَ ‏\"‏ ثُمَّ بِرُّ الْوَالِدَيْنِ ‏\"‏‏.‏ قَالَ ثُمَّ أَىٌّ قَالَ ‏\"‏ الْجِهَادُ فِي سَبِيلِ اللَّهِ ‏\"‏‏",
+            bengali = "আমি নবী করীম (ﷺ)-কে জিজ্ঞাসা করলাম, আল্লাহর কাছে সর্বাধিক প্রিয় আমল কোনটি? তিনি বললেন: যথাসময়ে নামাজ আদায় করা। আমি বললাম, তারপর কোনটি? তিনি বললেন: পিতা-মাতার সাথে সদ্ব্যবহার করা। আমি বললাম, তারপর কোনটি? তিনি বললেন: আল্লাহর পথে জিহাদ করা।",
+            english = "I asked the Prophet (ﷺ): 'Which deed is dearest to Allah?' He replied: 'To offer the prayers at their early stated fixed times.' I asked, 'What is the next?' He said: 'To be good and dutiful to your parents.'",
+            grade = "সহীহ (Sahih)",
+            narrator = "আব্দুল্লাহ ইবনে মাসউদ (রা.)",
+            category = HadithCategory.PRAYER
+        ),
+        HadithItem(
+            id = "muslim_223",
+            collection = "সহীহ মুসলিম",
+            collectionEn = "Sahih Muslim",
+            number = 223,
+            chapter = "Book of Purification",
+            chapterBn = "পবিত্রতা অধ্যায়",
+            arabic = "الطُّهُورُ شَطْرُ الإِيمَانِ وَالْحَمْدُ لِلَّهِ تَمْلأُ الْمِيزَانَ وَسُبْحَانَ اللَّهِ وَالْحَمْدُ لِلَّهِ تَمْلآنِ - أَوْ تَمْلأُ - مَا بَيْنَ السَّمَاوَاتِ وَالأَرْضِ",
+            bengali = "পবিত্রতা ঈমানের অর্ধেক। 'আলহামদুলিল্লাহ' নেক আমলের পরিমাপের পাল্লাকে পূর্ণ করে দেয়। আর 'সুবহানাল্লাহ' ও 'আলহামদুলিল্লাহ' আকাশ ও পৃথিবীর মধ্যবর্তী স্থানকে সওয়াব দিয়ে পরিপূর্ণ করে দেয়।",
+            english = "Purity is half of faith, and 'Alhamdulillah' fills the scale, and 'SubhanAllah' and 'Alhamdulillah' fill what is between heaven and earth.",
+            grade = "সহীহ (Sahih)",
+            narrator = "আবু মালেক আল-আশআরী (রা.)",
+            category = HadithCategory.PRAYER
+        ),
+        HadithItem(
+            id = "bukhari_1410",
+            collection = "সহীহ বুখারী",
+            collectionEn = "Sahih al-Bukhari",
+            number = 1410,
+            chapter = "Book of Zakat",
+            chapterBn = "যাকাত ও দান অধ্যায়",
+            arabic = "اتَّقُوا النَّارَ وَلَوْ بِشِقِّ تَمْرَةٍ",
+            bengali = "তোমরা জাহান্নামের আগুন থেকে বাঁচো, যদি তা একটি খেজুরের অর্ধেক দান করার বিনিময়েও হয়।",
+            english = "Protect yourselves from the Fire, even if it is with half a date given in charity.",
+            grade = "সহীহ (Sahih)",
+            narrator = "আদী ইবনে হাতিম (রা.)",
+            category = HadithCategory.CHARITY
+        ),
+        HadithItem(
+            id = "bukhari_6011",
+            collection = "সহীহ বুখারী",
+            collectionEn = "Sahih al-Bukhari",
+            number = 6011,
+            chapter = "Book of Good Manners",
+            chapterBn = "উত্তম শিষ্টাচার অধ্যায়",
+            arabic = "إِنَّ مِنْ خِيَارِكُمْ أَحْسَنَكُمْ أَخْلاَقًا",
+            bengali = "নিশ্চয়ই তোমাদের মধ্যে সর্বোত্তম ব্যক্তি সে, যার চরিত্র ও আচরণ সবচেয়ে সুন্দর ও উত্তম।",
+            english = "The best amongst you are those who have the best manners and character.",
+            grade = "সহীহ (Sahih)",
+            narrator = "আব্দুল্লাহ ইবনে আমর (রা.)",
+            category = HadithCategory.CHARACTER
+        ),
+        HadithItem(
+            id = "bukhari_13",
+            collection = "সহীহ বুখারী",
+            collectionEn = "Sahih al-Bukhari",
+            number = 13,
+            chapter = "Book of Faith",
+            chapterBn = "ঈমান অধ্যায়",
+            arabic = "لاَ يُؤْمِنُ أَحَدُكُمْ حَتَّى يُحِبَّ لأَخِيهِ مَا يُحِبُّ لِنَفْسِهِ",
+            bengali = "তোমাদের কেউ ততক্ষণ পর্যন্ত পূর্ণ মুমিন হতে পারবে না, যতক্ষণ না সে তার মুসলিম ভাইয়ের জন্য তাই পছন্দ করবে যা সে নিজের জন্য পছন্দ করে।",
+            english = "None of you will believe until he loves for his brother what he loves for himself.",
+            grade = "সহীহ (Sahih)",
+            narrator = "আনাস ইবনে মালিক (রা.)",
+            category = HadithCategory.CHARACTER
+        ),
+        HadithItem(
+            id = "bukhari_5971",
+            collection = "সহীহ বুখারী",
+            collectionEn = "Sahih al-Bukhari",
+            number = 5971,
+            chapter = "Book of Good Manners",
+            chapterBn = "পিতা-মাতার সম্মান অধ্যায়",
+            arabic = "جَاءَ رَجُلٌ إِلَى رَسُولِ اللَّهِ صلى الله عليه وسلم فَقَالَ مَنْ أَحَقُّ النَّاسِ بِحُسْنِ صَحَابَتِي قَالَ ‏\"‏ أُمُّكَ ‏\"‏‏.‏ قَالَ ثُمَّ مَنْ قَالَ ‏\"‏ ثُمَّ أُمُّكَ ‏\"‏‏.‏ قَالَ ثُمَّ مَنْ قَالَ ‏\"‏ ثُمَّ أُمُّكَ ‏\"‏‏.‏ قَالَ ثُمَّ مَنْ قَالَ ‏\"‏ ثُمَّ أَبُوكَ ‏\"‏‏",
+            bengali = "এক ব্যক্তি রাসূলুল্লাহ (ﷺ)-এর কাছে এসে জিজ্ঞাসা করল: মানুষের মধ্যে আমার সবচেয়ে উত্তম আচরণের বেশি হকদার কে? তিনি বললেন: তোমার মা। লোকটি বলল: তারপর কে? তিনি বললেন: তোমার মা। লোকটি বলল: তারপর কে? তিনি বললেন: তোমার মা। লোকটি বলল: তারপর কে? তিনি বললেন: তোমার পিতা।",
+            english = "A man came to Allah's Messenger (ﷺ) and asked: 'Who has the greatest right to my good companionship?' He said: 'Your mother.' The man asked, 'Then who?' He said: 'Your mother.' The man asked, 'Then who?' He said: 'Your mother.' The man asked, 'Then who?' He said: 'Then your father.'",
+            grade = "সহীহ (Sahih)",
+            narrator = "আবু হুরায়রা (রা.)",
+            category = HadithCategory.FAMILY
+        ),
+        HadithItem(
+            id = "muslim_2699",
+            collection = "সহীহ মুসলিম",
+            collectionEn = "Sahih Muslim",
+            number = 2699,
+            chapter = "Book of Remembrance and Knowledge",
+            chapterBn = "ইলম ও দ্বীন শিক্ষা অধ্যায়",
+            arabic = "مَنْ سَلَكَ طَرِيقًا يَلْتَمِسُ فِيهِ عِلْمًا سَهَّلَ اللَّهُ لَهُ بِهِ طَرِيقًا إِلَى الْجَنَّةِ",
+            bengali = "যে ব্যক্তি ইলম (দ্বীনি জ্ঞান) অর্জনের জন্য কোনো পথ অবলম্বন করে, আল্লাহ তার জন্য জান্নাতের পথ সহজ করে দেন।",
+            english = "Whoever treads a path in search of knowledge, Allah will make easy for him the path to Paradise.",
+            grade = "সহীহ (Sahih)",
+            narrator = "আবু হুরায়রা (রা.)",
+            category = HadithCategory.KNOWLEDGE
+        ),
+        HadithItem(
+            id = "bukhari_1904",
+            collection = "সহীহ বুখারী",
+            collectionEn = "Sahih al-Bukhari",
+            number = 1904,
+            chapter = "Book of Fasting",
+            chapterBn = "সাওম (রোজা) অধ্যায়",
+            arabic = "مَنْ صَامَ رَمَضَانَ إِيمَانًا وَاحْتِسَابًا غُفِرَ لَهُ مَا تَقَدَّمَ مِنْ ذَنْبِهِ",
+            bengali = "যে ব্যক্তি ঈমান ও সওয়াবের আশায় রমজান মাসের রোজা পালন করবে, তার অতীতের সমস্ত (সগীরা) গুনাহ ক্ষমা করে দেওয়া হবে।",
+            english = "Whoever fasts during the month of Ramadan out of sincere faith and hoping for reward from Allah, all his previous sins will be forgiven.",
+            grade = "সহীহ (Sahih)",
+            narrator = "আবু হুরায়রা (রা.)",
+            category = HadithCategory.FASTING
+        ),
+        HadithItem(
+            id = "bukhari_6407",
+            collection = "সহীহ বুখারী",
+            collectionEn = "Sahih al-Bukhari",
+            number = 6407,
+            chapter = "Book of Softening the Hearts",
+            chapterBn = "জিকির ও দোয়ার গুরুত্ব",
+            arabic = "مَثَلُ الَّذِي يَذْكُرُ رَبَّهُ وَالَّذِي لاَ يَذْكُرُ رَبَّهُ مَثَلُ الْحَىِّ وَالْمَيِّتِ",
+            bengali = "যে ব্যক্তি তার রবের জিকির (স্মরণ) করে আর যে ব্যক্তি তার রবের জিকির করে না—তাদের দৃষ্টান্ত হলো জীবিত ও মৃত ব্যক্তির ন্যায়।",
+            english = "The example of the one who celebrates the praise of his Lord and the one who does not is like that of a living and a dead body.",
+            grade = "সহীহ (Sahih)",
+            narrator = "আবু মূসা আল-আশআরী (রা.)",
+            category = HadithCategory.DAILY
+        )
+    )
+
+    val dailyHadith = hadiths[0] // Featured daily hadith
+}

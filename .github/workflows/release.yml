@@ -1,0 +1,136 @@
+name: Build & Release Android APK
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'Release version name (e.g., v1.0.0)'
+        required: false
+        default: 'v1.0.0'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build & Publish Release APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Determine Version Name & Asset Name
+        id: vars
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.version_name }}" ]; then
+            TAG_NAME="${{ github.event.inputs.version_name }}"
+          elif [ -n "${{ github.ref_name }}" ]; then
+            TAG_NAME="${{ github.ref_name }}"
+          else
+            TAG_NAME="v1.0.0-${{ github.sha }}"
+          fi
+          
+          # Clean tag prefix if present for clean file naming
+          CLEAN_VERSION="${TAG_NAME#v}"
+          ASSET_FILENAME="Islamic-Guidance-${TAG_NAME}.apk"
+          
+          echo "tag_name=${TAG_NAME}" >> "$GITHUB_OUTPUT"
+          echo "clean_version=${CLEAN_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "asset_filename=${ASSET_FILENAME}" >> "$GITHUB_OUTPUT"
+          echo "Building asset: ${ASSET_FILENAME}"
+
+      - name: Prepare Signing Keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          # 1. Restore debug keystore from base64 if present in repo
+          if [ ! -f debug.keystore ] && [ -f debug.keystore.base64 ]; then
+            echo "Decoding debug.keystore from repository base64 file..."
+            base64 -d debug.keystore.base64 > debug.keystore
+          fi
+
+          # 2. Setup release keystore (my-upload-key.jks)
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "Decoding release keystore from KEYSTORE_BASE64 secret..."
+            echo "$KEYSTORE_BASE64" | base64 -d > my-upload-key.jks
+          elif [ ! -f my-upload-key.jks ]; then
+            echo "Generating fallback signing key for standalone APK release..."
+            keytool -genkeypair -v \
+              -keystore my-upload-key.jks \
+              -alias upload \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -storepass "${STORE_PASSWORD:-android}" \
+              -keypass "${KEY_PASSWORD:-android}" \
+              -dname "CN=Islamic Guidance, OU=Mobile, O=Islamic Guidance, L=Dhaka, S=Dhaka, C=BD"
+          fi
+
+      - name: Build Release APK
+        env:
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD || 'android' }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'android' }}
+        run: |
+          ./gradlew assembleRelease --stacktrace
+
+      - name: Rename and Stage Release APK
+        run: |
+          APK_DIR="app/build/outputs/apk/release"
+          ASSET_NAME="${{ steps.vars.outputs.asset_filename }}"
+          
+          # Find generated release apk
+          SRC_APK=$(find "$APK_DIR" -type f -name "*.apk" | head -n 1)
+          
+          if [ -z "$SRC_APK" ]; then
+            echo "Error: No release APK found in $APK_DIR"
+            ls -la "$APK_DIR" || true
+            exit 1
+          fi
+          
+          echo "Found APK: $SRC_APK"
+          cp "$SRC_APK" "$APK_DIR/$ASSET_NAME"
+          echo "Staged APK as $APK_DIR/$ASSET_NAME"
+          ls -la "$APK_DIR"
+
+      # GUARANTEE: Actions artifact is uploaded regardless of release step outcome.
+      # If the GitHub Release fails for any reason, this artifact remains fully accessible.
+      - name: Upload Build Artifact to Actions
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.vars.outputs.asset_filename }}
+          path: app/build/outputs/apk/release/${{ steps.vars.outputs.asset_filename }}
+          if-no-files-found: warn
+          retention-days: 90
+
+      # Create or Update GitHub Release with directly downloadable APK asset
+      - name: Create GitHub Release with APK
+        if: success()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.vars.outputs.tag_name }}
+          name: "Islamic Guidance ${{ steps.vars.outputs.tag_name }}"
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            app/build/outputs/apk/release/${{ steps.vars.outputs.asset_filename }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
