@@ -32,6 +32,9 @@ sealed class Screen {
     object QiblaCompass : Screen()
     object Bookmarks : Screen()
     object Search : Screen()
+    object Themes : Screen()
+    object Reciters : Screen()
+    object AudioDownloads : Screen()
 }
 
 class MainActivity : ComponentActivity() {
@@ -52,7 +55,10 @@ class MainActivity : ComponentActivity() {
 
             var currentScreen by remember { mutableStateOf<Screen>(Screen.Tab(NavigationTab.HOME)) }
 
-            IslamicGuidanceTheme(darkTheme = isDarkTheme) {
+            IslamicGuidanceTheme(
+                themePreset = settings.themePreset,
+                darkTheme = isDarkTheme
+            ) {
                 val isSubScreen = currentScreen !is Screen.Tab
 
                 // Back navigation handler
@@ -70,7 +76,8 @@ class MainActivity : ComponentActivity() {
                                 onTabSelected = { tab ->
                                     currentScreen = Screen.Tab(tab)
                                 },
-                                language = settings.language
+                                language = settings.language,
+                                isGlassTheme = settings.themePreset == com.example.ui.theme.IslamicThemePreset.LIQUID_GLASS
                             )
                         }
                     }
@@ -109,7 +116,10 @@ class MainActivity : ComponentActivity() {
                                     NavigationTab.AZKAR -> AzkarScreen(viewModel = viewModel)
                                     NavigationTab.SETTINGS -> SettingsScreen(
                                         viewModel = viewModel,
-                                        onNavigateToBookmarks = { currentScreen = Screen.Bookmarks }
+                                        onNavigateToBookmarks = { currentScreen = Screen.Bookmarks },
+                                        onNavigateToThemes = { currentScreen = Screen.Themes },
+                                        onNavigateToReciters = { currentScreen = Screen.Reciters },
+                                        onNavigateToDownloads = { currentScreen = Screen.AudioDownloads }
                                     )
                                 }
                             }
@@ -155,6 +165,22 @@ class MainActivity : ComponentActivity() {
                                     currentScreen = Screen.SurahDetail(surahNum)
                                 },
                                 onNavigateBack = { currentScreen = Screen.Tab(NavigationTab.HOME) }
+                            )
+
+                            is Screen.Themes -> IslamicThemesScreen(
+                                viewModel = viewModel,
+                                onNavigateBack = { currentScreen = Screen.Tab(NavigationTab.SETTINGS) }
+                            )
+
+                            is Screen.Reciters -> RecitersScreen(
+                                viewModel = viewModel,
+                                onNavigateBack = { currentScreen = Screen.Tab(NavigationTab.SETTINGS) }
+                            )
+
+                            is Screen.AudioDownloads -> AudioDownloadsScreen(
+                                viewModel = viewModel,
+                                onNavigateBack = { currentScreen = Screen.Tab(NavigationTab.SETTINGS) },
+                                onNavigateToReciters = { currentScreen = Screen.Reciters }
                             )
                         }
 

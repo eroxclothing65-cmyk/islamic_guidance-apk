@@ -40,19 +40,35 @@ fun HadithScreen(viewModel: IslamicViewModel) {
     val selectedCategory by viewModel.selectedHadithCategory.collectAsState()
 
     var searchQuery by remember { mutableStateOf("") }
+    var selectedCollection by remember { mutableStateOf<String?>(null) }
+    var selectedGrade by remember { mutableStateOf<String?>(null) }
 
-    val filteredHadiths = remember(searchQuery, selectedCategory) {
+    val collections = listOf(
+        "সহীহ বুখারী",
+        "সহীহ মুসলিম",
+        "সুনান আবু দাউদ",
+        "জামে আত-তিরমিযী",
+        "সুনান আন-নাসায়ী",
+        "সুনান ইবনে মাজাহ"
+    )
+
+    val grades = listOf("সহীহ", "হাসান", "দুর্বল")
+
+    val filteredHadiths = remember(searchQuery, selectedCategory, selectedCollection, selectedGrade) {
         HadithData.hadiths.filter { item ->
             val matchesSearch = searchQuery.isBlank() ||
                     item.bengali.contains(searchQuery, ignoreCase = true) ||
                     item.english.contains(searchQuery, ignoreCase = true) ||
                     item.arabic.contains(searchQuery) ||
                     item.chapterBn.contains(searchQuery, ignoreCase = true) ||
+                    item.narrator.contains(searchQuery, ignoreCase = true) ||
                     item.number.toString() == searchQuery.trim()
 
             val matchesCategory = selectedCategory == null || item.category == selectedCategory
+            val matchesCollection = selectedCollection == null || item.collection.contains(selectedCollection!!)
+            val matchesGrade = selectedGrade == null || item.grade.contains(selectedGrade!!)
 
-            matchesSearch && matchesCategory
+            matchesSearch && matchesCategory && matchesCollection && matchesGrade
         }
     }
 
@@ -60,7 +76,7 @@ fun HadithScreen(viewModel: IslamicViewModel) {
         topBar = {
             IslamicTopBar(
                 title = AppStrings.get("nav_hadith", language),
-                subtitle = "${HadithData.hadiths.size} ${AppStrings.get("hadith_books", language)}"
+                subtitle = "${HadithData.hadiths.size} ${AppStrings.get("hadith_books", language)} • ৬টি প্রধান গ্রন্থ"
             )
         }
     ) { innerPadding ->
@@ -85,11 +101,68 @@ fun HadithScreen(viewModel: IslamicViewModel) {
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .padding(horizontal = 16.dp, vertical = 6.dp)
                     .testTag("hadith_search_field"),
                 shape = RoundedCornerShape(16.dp),
                 singleLine = true
             )
+
+            // Collection Filter Row (Kutub al-Sittah)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 2.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected = selectedCollection == null,
+                    onClick = { selectedCollection = null },
+                    label = { Text(if (language == AppLanguage.BENGALI) "সকল গ্রন্থ (৬টি)" else "All Books (6)") },
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                collections.forEach { book ->
+                    FilterChip(
+                        selected = selectedCollection == book,
+                        onClick = { selectedCollection = if (selectedCollection == book) null else book },
+                        label = { Text(book) },
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+            }
+
+            // Authenticity Grade Filter Row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 2.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected = selectedGrade == null,
+                    onClick = { selectedGrade = null },
+                    label = { Text(if (language == AppLanguage.BENGALI) "সকল মান" else "All Grades") },
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                grades.forEach { g ->
+                    FilterChip(
+                        selected = selectedGrade == g,
+                        onClick = { selectedGrade = if (selectedGrade == g) null else g },
+                        label = {
+                            val labelText = when (g) {
+                                "সহীহ" -> "সহীহ (Sahih)"
+                                "হাসান" -> "হাসান (Hasan)"
+                                else -> "দুর্বল (Da'if)"
+                            }
+                            Text(labelText)
+                        },
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+            }
 
             // Category Chips Carousel
             Row(
@@ -102,7 +175,7 @@ fun HadithScreen(viewModel: IslamicViewModel) {
                 FilterChip(
                     selected = selectedCategory == null,
                     onClick = { viewModel.setHadithCategory(null) },
-                    label = { Text(if (language == AppLanguage.BENGALI) "সকল হাদিস" else "All Hadith") },
+                    label = { Text(if (language == AppLanguage.BENGALI) "সকল বিষয়" else "All Topics") },
                     shape = RoundedCornerShape(12.dp)
                 )
 
@@ -119,7 +192,7 @@ fun HadithScreen(viewModel: IslamicViewModel) {
             // Hadith List
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 96.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(filteredHadiths, key = { it.id }) { hadith ->
@@ -132,7 +205,7 @@ fun HadithScreen(viewModel: IslamicViewModel) {
                         onToggleBookmark = { viewModel.toggleBookmark("hadith", hadith.id) },
                         onCopy = {
                             val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                            val clip = ClipData.newPlainText("Hadith", "${hadith.arabic}\n\n${hadith.bengali}\n\n[${hadith.collection} : ${hadith.number}]")
+                            val clip = ClipData.newPlainText("Hadith", "${hadith.arabic}\n\n${hadith.bengali}\n\n[${hadith.collection} : ${hadith.number} (${hadith.narrator}) - মান: ${hadith.grade}]")
                             cm.setPrimaryClip(clip)
                             Toast.makeText(context, "হাদিস কপি করা হয়েছে", Toast.LENGTH_SHORT).show()
                         },
@@ -190,15 +263,21 @@ fun HadithCardItem(
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    val gradeLower = hadith.grade.lowercase()
+                    val gradeColor = when {
+                        gradeLower.contains("সহীহ") || gradeLower.contains("sahih") -> EmeraldPrimaryLight
+                        gradeLower.contains("হাসান") || gradeLower.contains("hasan") -> AccentGold
+                        else -> androidx.compose.ui.graphics.Color(0xFFD32F2F)
+                    }
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        color = EmeraldPrimaryLight.copy(alpha = 0.15f),
+                        color = gradeColor.copy(alpha = 0.15f),
                         modifier = Modifier.padding(end = 6.dp)
                     ) {
                         Text(
                             text = hadith.grade,
                             style = MaterialTheme.typography.labelSmall.copy(
-                                color = EmeraldPrimaryLight,
+                                color = gradeColor,
                                 fontWeight = FontWeight.Bold
                             ),
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)

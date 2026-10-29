@@ -6,14 +6,25 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
+import com.example.ui.theme.IslamicThemePreset
+
 data class UserSettings(
     val language: AppLanguage = AppLanguage.BENGALI,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val themePreset: IslamicThemePreset = IslamicThemePreset.EMERALD_GREEN,
+    val reciterId: String = "alafasy",
     val arabicFontSize: Float = 28f,
     val translationFontSize: Float = 16f,
     val isHapticEnabled: Boolean = true,
     val isSoundEnabled: Boolean = true,
-    val selectedCityName: String = "ঢাকা",
+    val selectedCityName: String = "গার্ডেন রিচ, কলকাতা",
+    val calculationMethodId: String = "karachi",
+    val asrMethodId: String = "hanafi",
+    val fajrNotification: Boolean = true,
+    val dhuhrNotification: Boolean = true,
+    val asrNotification: Boolean = true,
+    val maghribNotification: Boolean = true,
+    val ishaNotification: Boolean = true,
     val lastReadSurah: Int = 1,
     val lastReadAyah: Int = 1,
     val bookmarks: Set<String> = emptySet(),
@@ -41,14 +52,28 @@ class UserPreferencesRepository(context: Context) {
             else -> ThemeMode.SYSTEM
         }
 
+        val themePresetId = prefs.getString("theme_preset", IslamicThemePreset.EMERALD_GREEN.id) ?: IslamicThemePreset.EMERALD_GREEN.id
+        val preset = IslamicThemePreset.entries.find { it.id == themePresetId } ?: IslamicThemePreset.EMERALD_GREEN
+
+        val reciter = prefs.getString("reciter_id", "alafasy") ?: "alafasy"
+
         return UserSettings(
             language = lang,
             themeMode = theme,
+            themePreset = preset,
+            reciterId = reciter,
             arabicFontSize = prefs.getFloat("arabic_font_size", 28f),
             translationFontSize = prefs.getFloat("translation_font_size", 16f),
             isHapticEnabled = prefs.getBoolean("haptic_enabled", true),
             isSoundEnabled = prefs.getBoolean("sound_enabled", true),
-            selectedCityName = prefs.getString("selected_city", "ঢাকা") ?: "ঢাকা",
+            selectedCityName = prefs.getString("selected_city", "গার্ডেন রিচ, কলকাতা") ?: "গার্ডেন রিচ, কলকাতা",
+            calculationMethodId = prefs.getString("calculation_method", "karachi") ?: "karachi",
+            asrMethodId = prefs.getString("asr_method", "hanafi") ?: "hanafi",
+            fajrNotification = prefs.getBoolean("notif_fajr", true),
+            dhuhrNotification = prefs.getBoolean("notif_dhuhr", true),
+            asrNotification = prefs.getBoolean("notif_asr", true),
+            maghribNotification = prefs.getBoolean("notif_maghrib", true),
+            ishaNotification = prefs.getBoolean("notif_isha", true),
             lastReadSurah = prefs.getInt("last_read_surah", 1),
             lastReadAyah = prefs.getInt("last_read_ayah", 1),
             bookmarks = prefs.getStringSet("bookmarks", emptySet()) ?: emptySet(),
@@ -75,6 +100,16 @@ class UserPreferencesRepository(context: Context) {
         _settings.value = _settings.value.copy(themeMode = mode)
     }
 
+    fun setThemePreset(preset: IslamicThemePreset) {
+        prefs.edit().putString("theme_preset", preset.id).apply()
+        _settings.value = _settings.value.copy(themePreset = preset)
+    }
+
+    fun setReciterId(reciterId: String) {
+        prefs.edit().putString("reciter_id", reciterId).apply()
+        _settings.value = _settings.value.copy(reciterId = reciterId)
+    }
+
     fun setArabicFontSize(size: Float) {
         prefs.edit().putFloat("arabic_font_size", size).apply()
         _settings.value = _settings.value.copy(arabicFontSize = size)
@@ -98,6 +133,42 @@ class UserPreferencesRepository(context: Context) {
     fun setSelectedCity(cityName: String) {
         prefs.edit().putString("selected_city", cityName).apply()
         _settings.value = _settings.value.copy(selectedCityName = cityName)
+    }
+
+    fun setCalculationMethod(methodId: String) {
+        prefs.edit().putString("calculation_method", methodId).apply()
+        _settings.value = _settings.value.copy(calculationMethodId = methodId)
+    }
+
+    fun setAsrMethod(asrId: String) {
+        prefs.edit().putString("asr_method", asrId).apply()
+        _settings.value = _settings.value.copy(asrMethodId = asrId)
+    }
+
+    fun setPrayerNotification(prayerKey: String, enabled: Boolean) {
+        val editor = prefs.edit()
+        when (prayerKey.lowercase()) {
+            "fajr" -> {
+                editor.putBoolean("notif_fajr", enabled).apply()
+                _settings.value = _settings.value.copy(fajrNotification = enabled)
+            }
+            "dhuhr" -> {
+                editor.putBoolean("notif_dhuhr", enabled).apply()
+                _settings.value = _settings.value.copy(dhuhrNotification = enabled)
+            }
+            "asr" -> {
+                editor.putBoolean("notif_asr", enabled).apply()
+                _settings.value = _settings.value.copy(asrNotification = enabled)
+            }
+            "maghrib" -> {
+                editor.putBoolean("notif_maghrib", enabled).apply()
+                _settings.value = _settings.value.copy(maghribNotification = enabled)
+            }
+            "isha" -> {
+                editor.putBoolean("notif_isha", enabled).apply()
+                _settings.value = _settings.value.copy(ishaNotification = enabled)
+            }
+        }
     }
 
     fun saveLastRead(surah: Int, ayah: Int) {

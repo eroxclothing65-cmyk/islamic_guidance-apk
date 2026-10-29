@@ -5,30 +5,106 @@ import java.util.Locale
 import java.util.TimeZone
 import kotlin.math.*
 
+enum class CalculationMethod(
+    val id: String,
+    val nameBn: String,
+    val nameEn: String,
+    val fajrAngle: Double,
+    val ishaAngle: Double
+) {
+    KARACHI(
+        "karachi",
+        "করাচি বিশ্ববিদ্যালয় (ইসলামিক সায়েন্সেস)",
+        "Univ. of Islamic Sciences, Karachi (18° / 18°)",
+        18.0,
+        18.0
+    ),
+    MWL(
+        "mwl",
+        "মুসলিম ওয়ার্ল্ড লীগ (MWL)",
+        "Muslim World League (18° / 17°)",
+        18.0,
+        17.0
+    ),
+    EGYPTIAN(
+        "egypt",
+        "মিশরীয় সার্ভে অথরিটি",
+        "Egyptian General Authority of Survey (19.5° / 17.5°)",
+        19.5,
+        17.5
+    ),
+    MAKKAH(
+        "makkah",
+        "উম্মুল কুরা, মক্কা",
+        "Umm al-Qura University, Makkah (18.5° / 90m)",
+        18.5,
+        18.5
+    )
+}
+
+enum class AsrJuristicMethod(
+    val id: String,
+    val nameBn: String,
+    val nameEn: String,
+    val shadowFactor: Double
+) {
+    HANAFI(
+        "hanafi",
+        "হানাফী (দ্বিগুণ ছায়া - পশ্চিমবঙ্গ/উপমহাদেশে প্রচলিত)",
+        "Hanafi (2x shadow - Standard in Bengal/Kolkata)",
+        2.0
+    ),
+    SHAFI(
+        "shafi",
+        "শাফেয়ী / মালেকী / হাম্বলী (একগুণ ছায়া)",
+        "Shafi'i / Maliki / Hanbali (1x shadow)",
+        1.0
+    )
+}
+
 data class CityLocation(
     val nameBn: String,
     val nameEn: String,
     val latitude: Double,
     val longitude: Double,
-    val timezoneOffsetHours: Double = 6.0
+    val timezoneOffsetHours: Double = 5.5,
+    val district: String = "Kolkata",
+    val state: String = "West Bengal",
+    val countryBn: String = "ভারত",
+    val countryEn: String = "India",
+    val timezoneId: String = "Asia/Kolkata"
 )
 
 object PrayerCalculator {
 
     val supportedCities = listOf(
-        CityLocation("ঢাকা", "Dhaka", 23.8103, 90.4125, 6.0),
-        CityLocation("চট্টগ্রাম", "Chittagong", 22.3569, 91.7832, 6.0),
-        CityLocation("সিলেট", "Sylhet", 24.8949, 91.8687, 6.0),
-        CityLocation("রাজশাহী", "Rajshahi", 24.3636, 88.6241, 6.0),
-        CityLocation("খুলনা", "Khulna", 22.8456, 89.5403, 6.0),
-        CityLocation("বরিশাল", "Barisal", 22.7010, 90.3535, 6.0),
-        CityLocation("রংপুর", "Rangpur", 25.7439, 89.2752, 6.0),
-        CityLocation("ময়মনসিংহ", "Mymensingh", 24.7471, 90.4203, 6.0),
-        CityLocation("মক্কা মুকাররমা", "Makkah", 21.3891, 39.8579, 3.0),
-        CityLocation("মদীনা মুনাওয়ারা", "Madinah", 24.5247, 39.5692, 3.0),
-        CityLocation("লন্ডন", "London", 51.5074, -0.1278, 0.0),
-        CityLocation("নিউইয়র্ক", "New York", 40.7128, -74.0060, -5.0),
-        CityLocation("দুবাই", "Dubai", 25.2048, 55.2708, 4.0)
+        CityLocation(
+            nameBn = "গার্ডেন রিচ, কলকাতা",
+            nameEn = "Garden Reach, Kolkata",
+            latitude = 22.5350,
+            longitude = 88.3050,
+            timezoneOffsetHours = 5.5,
+            district = "Kolkata",
+            state = "West Bengal",
+            countryBn = "ভারত",
+            countryEn = "India",
+            timezoneId = "Asia/Kolkata"
+        ),
+        CityLocation("ঢাকা", "Dhaka", 23.8103, 90.4125, 6.0, "ঢাকা", "ঢাকা বিভাগ", "বাংলাদেশ", "Bangladesh", "Asia/Dhaka"),
+        CityLocation("চট্টগ্রাম", "Chittagong", 22.3569, 91.7832, 6.0, "চট্টগ্রাম", "চট্টগ্রাম বিভাগ", "বাংলাদেশ", "Bangladesh", "Asia/Dhaka"),
+        CityLocation("সিলেট", "Sylhet", 24.8949, 91.8687, 6.0, "সিলেট", "সিলেট বিভাগ", "বাংলাদেশ", "Bangladesh", "Asia/Dhaka"),
+        CityLocation("রাজশাহী", "Rajshahi", 24.3636, 88.6241, 6.0, "রাজশাহী", "রাজশাহী বিভাগ", "বাংলাদেশ", "Bangladesh", "Asia/Dhaka"),
+        CityLocation("খুলনা", "Khulna", 22.8456, 89.5403, 6.0, "খুলনা", "খুলনা বিভাগ", "বাংলাদেশ", "Bangladesh", "Asia/Dhaka"),
+        CityLocation("বরিশাল", "Barisal", 22.7010, 90.3535, 6.0, "বরিশাল", "বরিশাল বিভাগ", "বাংলাদেশ", "Bangladesh", "Asia/Dhaka"),
+        CityLocation("রংপুর", "Rangpur", 25.7439, 89.2752, 6.0, "রংপুর", "রংপুর বিভাগ", "বাংলাদেশ", "Bangladesh", "Asia/Dhaka"),
+        CityLocation("ময়মনসিংহ", "Mymensingh", 24.7471, 90.4203, 6.0, "ময়মনসিংহ", "ময়মনসিংহ বিভাগ", "বাংলাদেশ", "Bangladesh", "Asia/Dhaka"),
+        CityLocation("দিল্লি", "New Delhi", 28.6139, 77.2090, 5.5, "New Delhi", "Delhi", "ভারত", "India", "Asia/Kolkata"),
+        CityLocation("মুম্বাই", "Mumbai", 19.0760, 72.8777, 5.5, "Mumbai", "Maharashtra", "ভারত", "India", "Asia/Kolkata"),
+        CityLocation("মক্কা মুকাররমা", "Makkah", 21.3891, 39.8579, 3.0, "Makkah", "Hejaz", "সৌদি আরব", "Saudi Arabia", "Asia/Riyadh"),
+        CityLocation("মদীনা মুনাওয়ারা", "Madinah", 24.5247, 39.5692, 3.0, "Madinah", "Hejaz", "সৌদি আরব", "Saudi Arabia", "Asia/Riyadh"),
+        CityLocation("লন্ডন", "London", 51.5074, -0.1278, 0.0, "London", "England", "যুক্তরাজ্য", "United Kingdom", "Europe/London"),
+        CityLocation("নিউইয়র্ক", "New York", 40.7128, -74.0060, -5.0, "New York", "NY", "যুক্তরাষ্ট্র", "USA", "America/New_York"),
+        CityLocation("দুবাই", "Dubai", 25.2048, 55.2708, 4.0, "Dubai", "Dubai", "সংযুক্ত আরব আমিরাত", "UAE", "Asia/Dubai")
     )
 
     const val KAABA_LAT = 21.422487
@@ -46,7 +122,12 @@ object PrayerCalculator {
         return qibla.toFloat()
     }
 
-    fun calculatePrayerSchedule(city: CityLocation, calendar: Calendar = Calendar.getInstance()): PrayerSchedule {
+    fun calculatePrayerSchedule(
+        city: CityLocation,
+        calendar: Calendar = Calendar.getInstance(TimeZone.getTimeZone(city.timezoneId)),
+        method: CalculationMethod = CalculationMethod.KARACHI,
+        asrMethod: AsrJuristicMethod = AsrJuristicMethod.HANAFI
+    ): PrayerSchedule {
         val dayOfYear = calendar.get(Calendar.DAY_OF_YEAR)
         val year = calendar.get(Calendar.YEAR)
         val month = calendar.get(Calendar.MONTH) + 1
@@ -78,8 +159,8 @@ object PrayerCalculator {
             return Math.toDegrees(acos(clamped)) / 15.0
         }
 
-        // Fajr (18 degrees twilight)
-        val haFajr = hourAngle(108.0)
+        // Fajr based on calculation method angle
+        val haFajr = hourAngle(90.0 + method.fajrAngle)
         val fajrTime = solarNoon - haFajr
 
         // Sunrise (zenith 90.833)
@@ -89,18 +170,23 @@ object PrayerCalculator {
         // Dhuhr: solar noon + small buffer (1-2 mins)
         val dhuhrTime = solarNoon + 0.03
 
-        // Asr: Hanafi method (shadow = 2x object shadow + noon shadow)
+        // Asr: based on juristic method (Hanafi 2x vs Standard 1x)
         val noonAltitude = 90.0 - Math.toDegrees(abs(latRad - decl))
         val noonShadow = 1.0 / tan(Math.toRadians(noonAltitude))
-        val asrAltitude = Math.toDegrees(atan(1.0 / (noonShadow + 1.5))) // Hanafi standard in South Asia
+        val asrAltitude = Math.toDegrees(atan(1.0 / (noonShadow + asrMethod.shadowFactor)))
         val haAsr = hourAngle(90.0 - asrAltitude)
         val asrTime = solarNoon + haAsr
 
         // Maghrib (sunset)
         val maghribTime = solarNoon + haSunrise
 
-        // Isha (18 degrees twilight)
-        val ishaTime = solarNoon + haFajr
+        // Isha based on calculation method angle
+        val haIsha = hourAngle(90.0 + method.ishaAngle)
+        val ishaTime = if (method == CalculationMethod.MAKKAH) {
+            maghribTime + 1.5 // 90 minutes after Maghrib
+        } else {
+            solarNoon + haIsha
+        }
 
         fun formatTime(hoursFloat: Double): String {
             var h = (hoursFloat + 24.0) % 24.0
@@ -193,7 +279,9 @@ object PrayerCalculator {
 
         return PrayerSchedule(
             city = city.nameBn,
-            country = "বাংলাদেশ",
+            country = city.countryBn,
+            district = city.district,
+            state = city.state,
             fajr = formatTime(fajrTime),
             sunrise = formatTime(sunriseTime),
             dhuhr = formatTime(dhuhrTime),
@@ -208,8 +296,56 @@ object PrayerCalculator {
             hijriDateEn = hijriDateEn,
             gregorianDateBn = gregorianBn,
             gregorianDateEn = gregorianEn,
-            qiblaBearing = qiblaBearing
+            qiblaBearing = qiblaBearing,
+            calculationMethodNameBn = method.nameBn,
+            calculationMethodNameEn = method.nameEn,
+            asrMethodNameBn = asrMethod.nameBn,
+            asrMethodNameEn = asrMethod.nameEn
         )
+    }
+
+    fun calculateMonthlySchedule(
+        city: CityLocation,
+        baseCalendar: Calendar = Calendar.getInstance(TimeZone.getTimeZone(city.timezoneId)),
+        method: CalculationMethod = CalculationMethod.KARACHI,
+        asrMethod: AsrJuristicMethod = AsrJuristicMethod.HANAFI
+    ): List<PrayerDaySchedule> {
+        val cal = baseCalendar.clone() as Calendar
+        val currentDay = baseCalendar.get(Calendar.DAY_OF_MONTH)
+        val maxDays = cal.getActualMaximum(Calendar.DAY_OF_MONTH)
+        val month = cal.get(Calendar.MONTH) + 1
+        val year = cal.get(Calendar.YEAR)
+
+        val list = mutableListOf<PrayerDaySchedule>()
+        for (d in 1..maxDays) {
+            val dayCal = Calendar.getInstance(TimeZone.getTimeZone(city.timezoneId)).apply {
+                set(Calendar.YEAR, year)
+                set(Calendar.MONTH, month - 1)
+                set(Calendar.DAY_OF_MONTH, d)
+                set(Calendar.HOUR_OF_DAY, 12)
+                set(Calendar.MINUTE, 0)
+            }
+            val schedule = calculatePrayerSchedule(city, dayCal, method, asrMethod)
+            val dateBn = "${convertToBengaliNumerals(d)} ${getBengaliMonthName(month)}"
+            val dateEn = "$d ${getEnglishMonthName(month)}"
+            val hijriBn = schedule.hijriDateBn.substringBefore(",")
+            list.add(
+                PrayerDaySchedule(
+                    dayOfMonth = d,
+                    dateFormattedBn = dateBn,
+                    dateFormattedEn = dateEn,
+                    hijriFormattedBn = hijriBn,
+                    fajr = schedule.fajr,
+                    sunrise = schedule.sunrise,
+                    dhuhr = schedule.dhuhr,
+                    asr = schedule.asr,
+                    maghrib = schedule.maghrib,
+                    isha = schedule.isha,
+                    isToday = (d == currentDay)
+                )
+            )
+        }
+        return list
     }
 
     private fun getApproximateHijriDate(calendar: Calendar): Quadruple<Int, String, String, Int> {

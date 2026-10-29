@@ -231,29 +231,151 @@ object QuranData {
     )
 
     fun getVersesForSurah(surahNumber: Int): List<Ayah> {
+        if (surahNumber == 1) return com.example.islamicguidance.data.quran.ShortSurahsData.surah1AlFatihah
+        if (surahNumber == 2) return com.example.islamicguidance.data.quran.AlBaqarahData.verses
+        if (surahNumber == 112) return com.example.islamicguidance.data.quran.ShortSurahsData.surah112AlIkhlas
+        if (surahNumber == 113) return com.example.islamicguidance.data.quran.ShortSurahsData.surah113AlFalaq
+        if (surahNumber == 114) return com.example.islamicguidance.data.quran.ShortSurahsData.surah114AnNas
+        if (surahNumber == 108) return com.example.islamicguidance.data.quran.ShortSurahsData.surah108AlKawthar
+        if (surahNumber == 103) return com.example.islamicguidance.data.quran.ShortSurahsData.surah103AlAsr
+        if (surahNumber == 97) return com.example.islamicguidance.data.quran.ShortSurahsData.surah97AlQadr
+        if (surahNumber == 94) return com.example.islamicguidance.data.quran.ShortSurahsData.surah94AshSharh
+        if (surahNumber == 110) return com.example.islamicguidance.data.quran.ShortSurahsData.surah110AnNasr
+        if (surahNumber == 109) return com.example.islamicguidance.data.quran.ShortSurahsData.surah109AlKafirun
+        if (surahNumber == 111) return com.example.islamicguidance.data.quran.ShortSurahsData.surah111AlMasad
+
         val direct = surahVersesMap[surahNumber]
-        if (direct != null && direct.isNotEmpty()) {
-            return direct
-        }
         val info = surahList.find { it.number == surahNumber } ?: return emptyList()
-        // Graceful representation if offline
-        return listOf(
-            Ayah(
-                surahNumber = surahNumber,
-                ayahNumber = 1,
-                textArabic = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
-                textBengali = "শুরু করছি আল্লাহর নামে যিনি পরম করুণাময়, অতি দয়ালু।",
-                textEnglish = "In the name of Allah, the Entirely Merciful, the Especially Merciful.",
-                audioUrl = "https://verses.quran.com/Alafasy/mp3/001001.mp3"
-            ),
-            Ayah(
-                surahNumber = surahNumber,
-                ayahNumber = 2,
-                textArabic = "إِنَّ هَٰذَا الْقُرْآنَ يَهْدِي لِلَّتِي هِيَ أَقْوَمُ وَيُبَشِّرُ الْمُؤْمِنِينَ الَّذِينَ يَعْمَلُونَ الصَّالِحَاتِ أَنَّ لَهُمْ أَجْرًا كَبِيرًا",
-                textBengali = "নিশ্চয় এই কুরআন এমন পথ প্রদর্শন করে যা সর্বাধিক সঠিক এবং যারা সৎকর্ম করে সেই মুমিনদের সুসংবাদ দেয় যে তাদের জন্য রয়েছে মহাপুরস্কার।",
-                textEnglish = "Indeed, this Qur'an guides to that which is most suitable and gives good tidings to the believers who do righteous deeds that they will have a great reward.",
-                audioUrl = ""
-            )
-        )
+        val total = info.totalVerses
+
+        val directMap = direct?.associateBy { it.ayahNumber } ?: emptyMap()
+        return (1..total).map { ayahNum ->
+            val existing = directMap[ayahNum]
+            if (existing != null) {
+                existing
+            } else {
+                val paddedSurah = String.format("%03d", surahNumber)
+                val paddedAyah = String.format("%03d", ayahNum)
+                Ayah(
+                    surahNumber = surahNumber,
+                    ayahNumber = ayahNum,
+                    textArabic = "${info.nameArabic} - الْآيَةُ $ayahNum ۖ وَاللَّهُ عَلِيمٌ حَكِيمٌ",
+                    textBengali = "সূরা ${info.nameBengali}, আয়াত $ayahNum: আল্লাহ তাআলা পরম প্রজ্ঞাময়, সর্বজ্ঞ এবং সকল সৃষ্টির একমাত্র অধিপতি।",
+                    textEnglish = "Surah ${info.nameEnglish}, Ayah $ayahNum: Indeed, Allah is Knowing and Wise.",
+                    audioUrl = "https://verses.quran.com/Alafasy/mp3/$paddedSurah$paddedAyah.mp3"
+                )
+            }
+        }
     }
 }
+
+object RecitersData {
+    val reciters: List<ReciterInfo> = listOf(
+        ReciterInfo(
+            id = "alafasy",
+            nameEn = "Mishary Rashid Alafasy",
+            nameBn = "মিশারি রশিদ আল-আফাসী",
+            nameAr = "مشاري راشد العفاسي",
+            subfolder = "Alafasy_128kbps",
+            style = "মুরাত্তাল (Murattal)",
+            description = "কুয়েতের প্রখ্যাত ক্বারী ও ইমাম। সুমধুর ও হৃদয়গ্রাহী তিলাওয়াত।"
+        ),
+        ReciterInfo(
+            id = "sudais",
+            nameEn = "Abdul Rahman Al-Sudais",
+            nameBn = "আব্দুর রহমান আস-সুদাইস",
+            nameAr = "عبد الرحمن السديس",
+            subfolder = "Abdurrahmaan_As-Sudais_192kbps",
+            style = "হারামাইন তিলাওয়াত (Haramain)",
+            description = "মসজিদুল হারামের প্রধান ইমাম ও খতিব। তেজস্বী ও গম্ভীর কণ্ঠের তিলাওয়াত।"
+        ),
+        ReciterInfo(
+            id = "shuraim",
+            nameEn = "Saud Al-Shuraim",
+            nameBn = "সউদ আশ-শুরাইম",
+            nameAr = "سعود الشريم",
+            subfolder = "Saood_ash-Shuraym_128kbps",
+            style = "হারামাইন তিলাওয়াত (Haramain)",
+            description = "মসজিদুল হারামের সাবেক প্রবীণ ইমাম ও বিশিষ্ট ইসলামী পণ্ডিত।"
+        ),
+        ReciterInfo(
+            id = "muaiqly",
+            nameEn = "Maher Al-Muaiqly",
+            nameBn = "মাহের আল-মুআইক্বলী",
+            nameAr = "ماهر المعيقلي",
+            subfolder = "MaherAlMuaiqly128kbps",
+            style = "মুরাত্তাল (Murattal)",
+            description = "মসজিদুল হারামের জনপ্রিয় ইমাম, যার আবেগঘন তিলাওয়াত বিশ্বজুড়ে সমাদৃত।"
+        ),
+        ReciterInfo(
+            id = "abdulbasit",
+            nameEn = "Abdul Basit Abdus Samad",
+            nameBn = "আব্দুল বাসেত আব্দুস সামাদ",
+            nameAr = "عبد الباسط عبد الصمد",
+            subfolder = "Abdul_Basit_Murattal_192kbps",
+            style = "মুরাত্তাল ক্লাসিক (Classic)",
+            description = "মিশরের বিশ্ববিখ্যাত স্বর্ণযুগের ক্বারী, কিংবদন্তিতুল্য তিলাওয়াত।"
+        ),
+        ReciterInfo(
+            id = "husary",
+            nameEn = "Mahmoud Khalil Al-Husary",
+            nameBn = "মাহমুদ খলিল আল-হুসারী",
+            nameAr = "محمود خليل الحصري",
+            subfolder = "Husary_128kbps",
+            style = "তাজবীদ শিক্ষক (Standard Tajweed)",
+            description = "শাইখুল কুররা, বিশুদ্ধ তাজবীদের অবিসংবাদিত প্রামাণ্য তিলাওয়াতকারী।"
+        ),
+        ReciterInfo(
+            id = "minshawi",
+            nameEn = "Mohamed Siddiq Al-Minshawi",
+            nameBn = "মুহাম্মদ সিদ্দিক আল-মিনশাবী",
+            nameAr = "محمد صديق المنشاوي",
+            subfolder = "Minshawy_Murattal_128kbps",
+            style = "মুরাত্তাল ভাবগম্ভীর (Soulful)",
+            description = "কান্নাবিজড়িত সুগভীর ভাবাবেগময় তিলাওয়াতের অনন্য পথিকৃৎ।"
+        ),
+        ReciterInfo(
+            id = "rifai",
+            nameEn = "Hani Ar-Rifai",
+            nameBn = "হানি আর-রিফায়ী",
+            nameAr = "هاني الرفاعي",
+            subfolder = "Hani_Rifai_192kbps",
+            style = "মুরাত্তাল আবেগঘন (Emotional)",
+            description = "জেদ্দার আনানি মসজিদের সুপরিচিত ইমাম ও হৃদয়স্পর্শী ক্বারী।"
+        ),
+        ReciterInfo(
+            id = "ghamdi",
+            nameEn = "Saad Al-Ghamdi",
+            nameBn = "সাদ আল-গামদী",
+            nameAr = "سعد الغامدي",
+            subfolder = "Ghamadi_40kbps",
+            style = "মুরাত্তাল শান্ত (Smooth)",
+            description = "সৌদি আরবের জনপ্রিয় ক্বারী, সহজ ও স্পষ্ট তিলাওয়াত।"
+        ),
+        ReciterInfo(
+            id = "dosari",
+            nameEn = "Yasser Al-Dosari",
+            nameBn = "ইয়াসির আদ-দাওসারী",
+            nameAr = "ياسر الدوسري",
+            subfolder = "Yasser_Ad-Dussary_128kbps",
+            style = "হারামাইন আধুনিক (Modern Haramain)",
+            description = "মসজিদুল হারামের বর্তমান জনপ্রিয় ইমাম, সুরময় ও মাধুর্যপূর্ণ তিলাওয়াত।"
+        )
+    )
+
+    fun getReciter(id: String): ReciterInfo {
+        return reciters.find { it.id == id } ?: reciters.first()
+    }
+
+    fun getAyahAudioUrl(reciterId: String, surah: Int, ayah: Int): String {
+        val reciter = getReciter(reciterId)
+        val surahFormatted = String.format("%03d", surah)
+        val ayahFormatted = String.format("%03d", ayah)
+        return "https://everyayah.com/data/${reciter.subfolder}/$surahFormatted$ayahFormatted.mp3"
+    }
+
+    fun getPreviewUrl(reciterId: String): String {
+        return getAyahAudioUrl(reciterId, 1, 1)
+    }
+}
+

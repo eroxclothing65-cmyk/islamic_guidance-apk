@@ -9,8 +9,10 @@ import android.os.VibratorManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.islamicguidance.data.*
+import com.example.islamicguidance.data.local.*
 import com.example.islamicguidance.service.CompassSensorManager
 import com.example.islamicguidance.service.QuranAudioPlayer
+import com.example.islamicguidance.service.QuranDownloadManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -20,7 +22,10 @@ class IslamicViewModel(application: Application) : AndroidViewModel(application)
 
     private val context: Context get() = getApplication<Application>().applicationContext
     val prefsRepo = UserPreferencesRepository(context)
+    val database = IslamicGuidanceDatabase.getDatabase(context)
+    val dataStore = IslamicDataStore(context)
     val audioPlayer = QuranAudioPlayer(context)
+    val downloadManager = QuranDownloadManager(context)
     val compassSensor = CompassSensorManager(context)
 
     val settings: StateFlow<UserSettings> = prefsRepo.settings
@@ -84,7 +89,14 @@ class IslamicViewModel(application: Application) : AndroidViewModel(application)
         val currentCityName = settings.value.selectedCityName
         val city = PrayerCalculator.supportedCities.find { it.nameBn == currentCityName || it.nameEn.equals(currentCityName, ignoreCase = true) }
             ?: PrayerCalculator.supportedCities.first()
-        _prayerSchedule.value = PrayerCalculator.calculatePrayerSchedule(city, Calendar.getInstance())
+        val method = CalculationMethod.entries.find { it.id == settings.value.calculationMethodId }
+            ?: CalculationMethod.KARACHI
+        val asrMethod = AsrJuristicMethod.entries.find { it.id == settings.value.asrMethodId }
+            ?: AsrJuristicMethod.HANAFI
+        val cal = Calendar.getInstance(java.util.TimeZone.getTimeZone(city.timezoneId))
+        val schedule = PrayerCalculator.calculatePrayerSchedule(city, cal, method, asrMethod)
+        val monthly = PrayerCalculator.calculateMonthlySchedule(city, cal, method, asrMethod)
+        _prayerSchedule.value = schedule.copy(monthlyDays = monthly)
     }
 
     fun selectCity(cityName: String) {
@@ -92,10 +104,34 @@ class IslamicViewModel(application: Application) : AndroidViewModel(application)
         updatePrayerSchedule()
     }
 
+    fun setCalculationMethod(methodId: String) {
+        prefsRepo.setCalculationMethod(methodId)
+        updatePrayerSchedule()
+    }
+
+    fun setAsrMethod(asrId: String) {
+        prefsRepo.setAsrMethod(asrId)
+        updatePrayerSchedule()
+    }
+
+    fun togglePrayerNotification(prayerKey: String, enabled: Boolean) {
+        prefsRepo.setPrayerNotification(prayerKey, enabled)
+    }
+
     fun selectSurah(surah: SurahInfo) {
         _selectedSurah.value = surah
         _surahVerses.value = QuranData.getVersesForSurah(surah.number)
         prefsRepo.saveLastRead(surah.number, 1)
+        viewModelScope.launch {
+            database.readingHistoryDao().saveReadingPosition(
+                ReadingHistoryEntity(
+                    id = 1,
+                    surahNumber = surah.number,
+                    ayahNumber = 1,
+                    surahName = surah.nameBengali
+                )
+            )
+        }
     }
 
     fun selectSurahByNumber(surahNumber: Int) {
@@ -145,7 +181,23 @@ class IslamicViewModel(application: Application) : AndroidViewModel(application)
 
     fun toggleBookmark(type: String, id: String) {
         val key = "$type:$id"
+        val wasBookmarked = prefsRepo.isBookmarked(key)
         prefsRepo.toggleBookmark(key)
+        viewModelScope.launch {
+            if (wasBookmarked) {
+                database.bookmarkDao().deleteBookmarkById(key)
+            } else {
+                database.bookmarkDao().insertBookmark(
+                    BookmarkEntity(
+                        id = key,
+                        type = type,
+                        title = key,
+                        subtitle = "",
+                        targetId = id
+                    )
+                )
+            }
+        }
     }
 
     fun isBookmarked(type: String, id: String): Boolean {
@@ -223,8 +275,79 @@ class IslamicViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    fun setThemePreset(preset: com.example.ui.theme.IslamicThemePreset) {
+        prefsRepo.setThemePreset(preset)
+    }
+
+    fun setReciterId(reciterId: String) {
+        prefsRepo.setReciterId(reciterId)
+    }
+
+    fun playAyah(surahNumber: Int, ayahNumber: Int, surahName: String) {
+        audioPlayer.playAyah(
+            surahNumber = surahNumber,
+            ayahNumber = ayahNumber,
+            surahName = surahName,
+            reciterId = settings.value.reciterId
+        )
+    }
+
+    fun playReciterPreview(reciterId: String) {
+        audioPlayer.playPreview(reciterId)
+    }
+
+    fun toggleAudioPlayPause() {
+        when (audioPlayer.playbackState.value) {
+            com.example.islamicguidance.service.PlaybackState.PLAYING -> audioPlayer.pause()
+            com.example.islamicguidance.service.PlaybackState.PAUSED -> audioPlayer.resume()
+            else -> {
+                val track = audioPlayer.currentTrack.value
+                playAyah(track.surahNumber, track.ayahNumber, track.surahName)
+            }
+        }
+    }
+
+    fun stopAudio() {
+        audioPlayer.stop()
+    }
+
+    fun seekAudioTo(positionMs: Int) {
+        audioPlayer.seekTo(positionMs)
+    }
+
+    fun toggleAudioRepeat() {
+        audioPlayer.toggleRepeat()
+    }
+
+    fun playNextAyah() {
+        val track = audioPlayer.currentTrack.value
+        val surah = QuranData.surahList.find { it.number == track.surahNumber } ?: return
+        if (track.ayahNumber < surah.totalVerses) {
+            playAyah(track.surahNumber, track.ayahNumber + 1, track.surahName)
+        } else if (track.surahNumber < 114) {
+            val nextSurah = QuranData.surahList.find { it.number == track.surahNumber + 1 } ?: return
+            playAyah(nextSurah.number, 1, nextSurah.nameBengali)
+        }
+    }
+
+    fun playPreviousAyah() {
+        val track = audioPlayer.currentTrack.value
+        if (track.ayahNumber > 1) {
+            playAyah(track.surahNumber, track.ayahNumber - 1, track.surahName)
+        } else if (track.surahNumber > 1) {
+            val prevSurah = QuranData.surahList.find { it.number == track.surahNumber - 1 } ?: return
+            playAyah(prevSurah.number, prevSurah.totalVerses, prevSurah.nameBengali)
+        }
+    }
+
     fun clearAllUserData() {
         prefsRepo.clearAllData()
         updatePrayerSchedule()
+        viewModelScope.launch {
+            database.bookmarkDao().clearAllBookmarks()
+            database.readingHistoryDao().clearHistory()
+            database.worshipRecordDao().clearAllRecords()
+            dataStore.clearAll()
+        }
     }
 }

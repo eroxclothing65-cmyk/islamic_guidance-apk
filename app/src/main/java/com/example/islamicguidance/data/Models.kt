@@ -96,6 +96,20 @@ data class DuaItem(
     val category: DuaCategory
 )
 
+data class PrayerDaySchedule(
+    val dayOfMonth: Int,
+    val dateFormattedBn: String,
+    val dateFormattedEn: String,
+    val hijriFormattedBn: String,
+    val fajr: String,
+    val sunrise: String,
+    val dhuhr: String,
+    val asr: String,
+    val maghrib: String,
+    val isha: String,
+    val isToday: Boolean = false
+)
+
 data class PrayerSchedule(
     val city: String,
     val country: String,
@@ -113,7 +127,14 @@ data class PrayerSchedule(
     val hijriDateEn: String,
     val gregorianDateBn: String,
     val gregorianDateEn: String,
-    val qiblaBearing: Float
+    val qiblaBearing: Float,
+    val calculationMethodNameBn: String = "করাচি ইসলামিক সায়েন্সেস (১৮° / ১৮°)",
+    val calculationMethodNameEn: String = "Univ. of Islamic Sciences, Karachi (18° / 18°)",
+    val asrMethodNameBn: String = "হানাফী (দ্বিগুণ ছায়া)",
+    val asrMethodNameEn: String = "Hanafi (2x shadow)",
+    val district: String = "Kolkata",
+    val state: String = "West Bengal",
+    val monthlyDays: List<PrayerDaySchedule> = emptyList()
 )
 
 data class BookmarkItem(
@@ -131,3 +152,17 @@ data class WorshipGoalItem(
     val titleEn: String,
     val isCompleted: Boolean = false
 )
+
+data class ReciterInfo(
+    val id: String,
+    val nameEn: String,
+    val nameBn: String,
+    val nameAr: String,
+    val subfolder: String,
+    val style: String = "মুরাত্তাল (Murattal)",
+    val description: String = "",
+    val descriptionEn: String = "Authentic Murattal Quran recitation."
+) {
+    val descriptionBn: String get() = description
+}
+

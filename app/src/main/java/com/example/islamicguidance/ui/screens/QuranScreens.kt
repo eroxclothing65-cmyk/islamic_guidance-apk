@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import kotlinx.coroutines.launch
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -245,7 +246,11 @@ fun SurahDetailScreen(
     val selectedSurah by viewModel.selectedSurah.collectAsState()
     val verses by viewModel.surahVerses.collectAsState()
 
+    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
     var showFontControls by remember { mutableStateOf(false) }
+    var showJumpDialog by remember { mutableStateOf(false) }
+    var verseSearchQuery by remember { mutableStateOf("") }
 
     if (selectedSurah == null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -256,6 +261,55 @@ fun SurahDetailScreen(
 
     val surah = selectedSurah!!
 
+    // Jump to Verse Dialog
+    if (showJumpDialog) {
+        var inputVerse by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { showJumpDialog = false },
+            title = { Text(if (language == AppLanguage.BENGALI) "নির্দিষ্ট আয়াতে যান" else "Jump to Verse") },
+            text = {
+                Column {
+                    Text(
+                        text = if (language == AppLanguage.BENGALI)
+                            "১ থেকে ${surah.totalVerses} পর্যন্ত যেকোনো আয়াত নম্বর লিখুন:"
+                        else
+                            "Enter verse number from 1 to ${surah.totalVerses}:",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    OutlinedTextField(
+                        value = inputVerse,
+                        onValueChange = { inputVerse = it.filter { ch -> ch.isDigit() } },
+                        placeholder = { Text("1..${surah.totalVerses}") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val num = inputVerse.toIntOrNull()
+                        if (num != null && num in 1..surah.totalVerses) {
+                            showJumpDialog = false
+                            coroutineScope.launch {
+                                // +1 for the header banner
+                                listState.animateScrollToItem(num)
+                            }
+                        }
+                    }
+                ) {
+                    Text(if (language == AppLanguage.BENGALI) "যান" else "Go")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showJumpDialog = false }) {
+                    Text(AppStrings.get("cancel", language))
+                }
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             IslamicTopBar(
@@ -264,6 +318,12 @@ fun SurahDetailScreen(
                 canNavigateBack = true,
                 onNavigateBack = onNavigateBack,
                 actions = {
+                    IconButton(
+                        onClick = { showJumpDialog = true },
+                        modifier = Modifier.testTag("jump_to_verse_button")
+                    ) {
+                        Icon(Icons.Default.PinDrop, contentDescription = "Jump to Verse")
+                    }
                     IconButton(
                         onClick = { showFontControls = !showFontControls },
                         modifier = Modifier.testTag("toggle_font_controls")
@@ -288,6 +348,59 @@ fun SurahDetailScreen(
                     }
                 }
             )
+        },
+        bottomBar = {
+            // Surah navigation bottom controls (Previous / Next Surah)
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 4.dp
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (surah.number > 1) {
+                        OutlinedButton(
+                            onClick = {
+                                viewModel.selectSurahByNumber(surah.number - 1)
+                                coroutineScope.launch { listState.scrollToItem(0) }
+                            },
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Default.ChevronLeft, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(if (language == AppLanguage.BENGALI) "পূর্ববর্তী সূরা" else "Prev Surah")
+                        }
+                    } else {
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+
+                    Text(
+                        text = "${surah.number} / 114",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    )
+
+                    if (surah.number < 114) {
+                        Button(
+                            onClick = {
+                                viewModel.selectSurahByNumber(surah.number + 1)
+                                coroutineScope.launch { listState.scrollToItem(0) }
+                            },
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(if (language == AppLanguage.BENGALI) "পরবর্তী সূরা" else "Next Surah")
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(Icons.Default.ChevronRight, contentDescription = null, modifier = Modifier.size(18.dp))
+                        }
+                    } else {
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                }
+            }
         }
     ) { innerPadding ->
         Column(
@@ -332,6 +445,7 @@ fun SurahDetailScreen(
             }
 
             LazyColumn(
+                state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
             ) {
@@ -392,11 +506,10 @@ fun SurahDetailScreen(
                         isBookmarked = viewModel.isBookmarked("ayah", "${ayah.surahNumber}_${ayah.ayahNumber}"),
                         onToggleBookmark = { viewModel.toggleBookmark("ayah", "${ayah.surahNumber}_${ayah.ayahNumber}") },
                         onPlayAudio = {
-                            viewModel.audioPlayer.playAyah(
+                            viewModel.playAyah(
                                 ayah.surahNumber,
                                 ayah.ayahNumber,
-                                surah.nameBengali,
-                                ayah.audioUrl
+                                surah.nameBengali
                             )
                         },
                         onCopy = {

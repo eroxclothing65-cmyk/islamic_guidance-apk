@@ -43,6 +43,9 @@ fun PrayerTimesScreen(
     val language = settings.language
 
     var showCityDialog by remember { mutableStateOf(false) }
+    var showMonthlyTimetable by remember { mutableStateOf(false) }
+    var showMethodDialog by remember { mutableStateOf(false) }
+    var showAsrDialog by remember { mutableStateOf(false) }
 
     if (showCityDialog) {
         AlertDialog(
@@ -90,7 +93,7 @@ fun PrayerTimesScreen(
         topBar = {
             IslamicTopBar(
                 title = AppStrings.get("prayer_schedule", language),
-                subtitle = "${settings.selectedCityName} • বাংলাদেশ",
+                subtitle = "${settings.selectedCityName} • ${schedule?.state ?: "West Bengal"}, ${schedule?.country ?: "ভারত"}",
                 canNavigateBack = canNavigateBack,
                 onNavigateBack = onNavigateBack,
                 actions = {
@@ -188,71 +191,421 @@ fun PrayerTimesScreen(
                 }
             }
 
-            // Qibla Compass Navigation Button
+            // Location & Coordinates Information Card
             item {
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(onClick = onNavigateToQibla),
+                    modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(42.dp)
-                                    .clip(CircleShape)
-                                    .background(AccentGold.copy(alpha = 0.2f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Default.Explore, contentDescription = null, tint = AccentGold)
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Place,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = if (language == AppLanguage.BENGALI) "নামাজের অবস্থান" else "Prayer Location",
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+                                )
                             }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Text(
-                                    text = AppStrings.get("qibla_compass", language),
-                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                                )
-                                Text(
-                                    text = "কিবলার কোণ: ${s.qiblaBearing.toInt()}° (পশ্চিম-উত্তর-পশ্চিম)",
-                                    style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                )
+                            TextButton(onClick = { showCityDialog = true }) {
+                                Text(if (language == AppLanguage.BENGALI) "পরিবর্তন" else "Change")
                             }
                         }
 
-                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Text(
+                            text = "${settings.selectedCityName}, ${s.state}, ${s.country}",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = if (settings.selectedCityName.contains("গার্ডেন রিচ") || settings.selectedCityName.contains("Garden Reach")) {
+                                "অক্ষাংশ: ২২.৫৩৫০° উ, দ্রাঘিমাংশ: ৮৮.৩০৫০° পূ • Asia/Kolkata (IST +5:30)\n✓ ম্যানুয়াল অবস্থান: কোনো GPS পারমিশনের প্রয়োজন নেই।"
+                            } else {
+                                "অঞ্চল: ${s.country} • স্থানীয় সময় অঞ্চল ভিত্তিক অফলাইন হিসাব"
+                            },
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                lineHeight = 16.sp
+                            )
+                        )
                     }
                 }
             }
 
-            // Timetable Rows
+            // Calculation & Juristic Method Configuration Chips
             item {
-                Text(
-                    text = "আজকের নামাজের সময়সূচি:",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    modifier = Modifier.padding(vertical = 4.dp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    AssistChip(
+                        onClick = { showMethodDialog = true },
+                        label = {
+                            Text(
+                                text = if (language == AppLanguage.BENGALI) "পদ্ধতি: করাচি (১৮°/১৮°)" else "Method: Karachi",
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(Icons.Default.Tune, contentDescription = null, modifier = Modifier.size(16.dp))
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    AssistChip(
+                        onClick = { showAsrDialog = true },
+                        label = {
+                            Text(
+                                text = if (settings.asrMethodId == "hanafi") {
+                                    if (language == AppLanguage.BENGALI) "আসর: হানাফী (২x)" else "Asr: Hanafi (2x)"
+                                } else {
+                                    if (language == AppLanguage.BENGALI) "আসর: শাফেয়ী (১x)" else "Asr: Shafi'i (1x)"
+                                },
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(Icons.Default.HourglassBottom, contentDescription = null, modifier = Modifier.size(16.dp))
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            // Monthly Timetable & Qibla Action Row
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = { showMonthlyTimetable = true },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.CalendarMonth, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(if (language == AppLanguage.BENGALI) "মাসিক সময়সূচি" else "Monthly Table")
+                    }
+
+                    OutlinedButton(
+                        onClick = onNavigateToQibla,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.Explore, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(AppStrings.get("qibla_compass", language))
+                    }
+                }
+            }
+
+            // Timetable Header
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (language == AppLanguage.BENGALI) "আজকের নামাজের সময়সূচি:" else "Today's Prayer Schedule:",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+                    Text(
+                        text = if (language == AppLanguage.BENGALI) "নোটিফিকেশন" else "Alerts",
+                        style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    )
+                }
+            }
+
+            item {
+                PrayerScheduleRow(
+                    name = AppStrings.get("fajr", language),
+                    time = s.fajr,
+                    isNext = s.nextPrayerNameEn == "Fajr",
+                    icon = Icons.Default.WbTwilight,
+                    isAlertEnabled = settings.fajrNotification,
+                    onToggleAlert = { viewModel.togglePrayerNotification("fajr", !settings.fajrNotification) }
+                )
+            }
+            item {
+                PrayerScheduleRow(
+                    name = AppStrings.get("sunrise", language),
+                    time = s.sunrise,
+                    isNext = false,
+                    icon = Icons.Default.WbSunny,
+                    isAlertEnabled = false,
+                    onToggleAlert = null
+                )
+            }
+            item {
+                PrayerScheduleRow(
+                    name = AppStrings.get("dhuhr", language),
+                    time = s.dhuhr,
+                    isNext = s.nextPrayerNameEn == "Dhuhr",
+                    icon = Icons.Default.Brightness5,
+                    isAlertEnabled = settings.dhuhrNotification,
+                    onToggleAlert = { viewModel.togglePrayerNotification("dhuhr", !settings.dhuhrNotification) }
+                )
+            }
+            item {
+                PrayerScheduleRow(
+                    name = AppStrings.get("asr", language),
+                    time = s.asr,
+                    isNext = s.nextPrayerNameEn == "Asr",
+                    icon = Icons.Default.Brightness6,
+                    isAlertEnabled = settings.asrNotification,
+                    onToggleAlert = { viewModel.togglePrayerNotification("asr", !settings.asrNotification) }
+                )
+            }
+            item {
+                PrayerScheduleRow(
+                    name = AppStrings.get("maghrib", language),
+                    time = s.maghrib,
+                    isNext = s.nextPrayerNameEn == "Maghrib",
+                    icon = Icons.Default.NightsStay,
+                    isAlertEnabled = settings.maghribNotification,
+                    onToggleAlert = { viewModel.togglePrayerNotification("maghrib", !settings.maghribNotification) }
+                )
+            }
+            item {
+                PrayerScheduleRow(
+                    name = AppStrings.get("isha", language),
+                    time = s.isha,
+                    isNext = s.nextPrayerNameEn == "Isha",
+                    icon = Icons.Default.Brightness2,
+                    isAlertEnabled = settings.ishaNotification,
+                    onToggleAlert = { viewModel.togglePrayerNotification("isha", !settings.ishaNotification) }
                 )
             }
 
-            item { PrayerScheduleRow(AppStrings.get("fajr", language), s.fajr, s.nextPrayerNameEn == "Fajr", Icons.Default.WbTwilight) }
-            item { PrayerScheduleRow(AppStrings.get("sunrise", language), s.sunrise, false, Icons.Default.WbSunny) }
-            item { PrayerScheduleRow(AppStrings.get("dhuhr", language), s.dhuhr, s.nextPrayerNameEn == "Dhuhr", Icons.Default.Brightness5) }
-            item { PrayerScheduleRow(AppStrings.get("asr", language), s.asr, s.nextPrayerNameEn == "Asr", Icons.Default.Brightness6) }
-            item { PrayerScheduleRow(AppStrings.get("maghrib", language), s.maghrib, s.nextPrayerNameEn == "Maghrib", Icons.Default.NightsStay) }
-            item { PrayerScheduleRow(AppStrings.get("isha", language), s.isha, s.nextPrayerNameEn == "Isha", Icons.Default.Brightness2) }
+            // Accuracy Disclaimer Card
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = null,
+                            tint = AccentGold,
+                            modifier = Modifier.size(20.dp).padding(top = 2.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = if (language == AppLanguage.BENGALI) {
+                                "জরুরি সতর্কতা: এই সময়সূচি জ্যোতির্বৈজ্ঞানিক সূত্রের মাধ্যমে নির্ভুলভাবে গণনা করা হয়েছে। স্থানীয় মসজিদের নির্ধারিত আজান ও জামায়াতের সময়ের সাথে সুরক্ষামূলক সতর্কতার কারণে ১-২ মিনিট পার্থক্য হতে পারে।"
+                            } else {
+                                "Note: These prayer times are calculated mathematically from solar astronomical formulas. They may differ slightly (1-2 mins) from your local mosque timetable due to safety margins."
+                            },
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                lineHeight = 17.sp
+                            )
+                        )
+                    }
+                }
+            }
         }
+    }
+
+    // Monthly Timetable Dialog
+    if (showMonthlyTimetable && schedule != null) {
+        val s = schedule!!
+        AlertDialog(
+            onDismissRequest = { showMonthlyTimetable = false },
+            title = {
+                Column {
+                    Text(
+                        text = if (language == AppLanguage.BENGALI) "মাসিক নামাজের সময়সূচি" else "Monthly Prayer Timetable",
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                    )
+                    Text(
+                        text = "${settings.selectedCityName} • ${s.gregorianDateEn.substringAfter(" ")}",
+                        style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.primary)
+                    )
+                }
+            },
+            text = {
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 420.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    items(s.monthlyDays.size) { idx ->
+                        val day = s.monthlyDays[idx]
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (day.isToday) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        ) {
+                            Column(modifier = Modifier.padding(10.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = if (language == AppLanguage.BENGALI) "${day.dateFormattedBn} (${day.hijriFormattedBn})" else "${day.dateFormattedEn}",
+                                        style = MaterialTheme.typography.labelMedium.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (day.isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                        )
+                                    )
+                                    if (day.isToday) {
+                                        Text(
+                                            text = if (language == AppLanguage.BENGALI) "আজ" else "Today",
+                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                color = MaterialTheme.colorScheme.primary,
+                                                fontWeight = FontWeight.ExtraBold
+                                            )
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("ফজর: ${day.fajr}", style = MaterialTheme.typography.bodySmall)
+                                    Text("যোহর: ${day.dhuhr}", style = MaterialTheme.typography.bodySmall)
+                                    Text("আসর: ${day.asr}", style = MaterialTheme.typography.bodySmall)
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("সূর্যোদয়: ${day.sunrise}", style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
+                                    Text("মাগরিব: ${day.maghrib}", style = MaterialTheme.typography.bodySmall)
+                                    Text("ইশা: ${day.isha}", style = MaterialTheme.typography.bodySmall)
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showMonthlyTimetable = false }) {
+                    Text(if (language == AppLanguage.BENGALI) "বন্ধ করুন" else "Close")
+                }
+            }
+        )
+    }
+
+    // Calculation Method Selection Dialog
+    if (showMethodDialog) {
+        AlertDialog(
+            onDismissRequest = { showMethodDialog = false },
+            title = { Text(if (language == AppLanguage.BENGALI) "হিসাব পদ্ধতি নির্বাচন" else "Select Calculation Method") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    CalculationMethod.entries.forEach { method ->
+                        val isSelected = method.id == settings.calculationMethodId
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    viewModel.setCalculationMethod(method.id)
+                                    showMethodDialog = false
+                                },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Text(
+                                    text = if (language == AppLanguage.BENGALI) method.nameBn else method.nameEn,
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                    )
+                                )
+                                Text(
+                                    text = "Fajr: ${method.fajrAngle}° | Isha: ${method.ishaAngle}°",
+                                    style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showMethodDialog = false }) {
+                    Text(AppStrings.get("cancel", language))
+                }
+            }
+        )
+    }
+
+    // Asr Method Selection Dialog
+    if (showAsrDialog) {
+        AlertDialog(
+            onDismissRequest = { showAsrDialog = false },
+            title = { Text(if (language == AppLanguage.BENGALI) "আসর মাযহাব পদ্ধতি" else "Asr Juristic Method") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    AsrJuristicMethod.entries.forEach { asr ->
+                        val isSelected = asr.id == settings.asrMethodId
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    viewModel.setAsrMethod(asr.id)
+                                    showAsrDialog = false
+                                },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Text(
+                                    text = if (language == AppLanguage.BENGALI) asr.nameBn else asr.nameEn,
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showAsrDialog = false }) {
+                    Text(AppStrings.get("cancel", language))
+                }
+            }
+        )
     }
 }
 
 @Composable
-fun PrayerScheduleRow(name: String, time: String, isNext: Boolean, icon: androidx.compose.ui.graphics.vector.ImageVector) {
+fun PrayerScheduleRow(
+    name: String,
+    time: String,
+    isNext: Boolean,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    isAlertEnabled: Boolean = false,
+    onToggleAlert: (() -> Unit)? = null
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
@@ -264,7 +617,7 @@ fun PrayerScheduleRow(name: String, time: String, isNext: Boolean, icon: android
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -285,13 +638,29 @@ fun PrayerScheduleRow(name: String, time: String, isNext: Boolean, icon: android
                 )
             }
 
-            Text(
-                text = time,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = if (isNext) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = time,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = if (isNext) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                    )
                 )
-            )
+                if (onToggleAlert != null) {
+                    Spacer(modifier = Modifier.width(10.dp))
+                    IconButton(
+                        onClick = onToggleAlert,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (isAlertEnabled) Icons.Default.NotificationsActive else Icons.Default.NotificationsOff,
+                            contentDescription = "Toggle Prayer Alert",
+                            tint = if (isAlertEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
         }
     }
 }

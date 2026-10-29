@@ -14,7 +14,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -119,14 +119,25 @@ enum class NavigationTab(val route: String, val iconFilled: ImageVector, val ico
 fun IslamicBottomNavigationBar(
     currentTab: NavigationTab,
     onTabSelected: (NavigationTab) -> Unit,
-    language: AppLanguage
+    language: AppLanguage,
+    isGlassTheme: Boolean = false
 ) {
-    NavigationBar(
-        modifier = Modifier
+    val navModifier = if (isGlassTheme) {
+        Modifier
             .windowInsetsPadding(WindowInsets.navigationBars)
-            .testTag("islamic_bottom_nav"),
-        containerColor = MaterialTheme.colorScheme.surface,
-        tonalElevation = 6.dp
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+            .liquidGlassEffect(shape = RoundedCornerShape(24.dp), borderWidth = 1.dp)
+            .testTag("islamic_bottom_nav")
+    } else {
+        Modifier
+            .windowInsetsPadding(WindowInsets.navigationBars)
+            .testTag("islamic_bottom_nav")
+    }
+
+    NavigationBar(
+        modifier = navModifier,
+        containerColor = if (isGlassTheme) Color.Transparent else MaterialTheme.colorScheme.surface,
+        tonalElevation = if (isGlassTheme) 0.dp else 6.dp
     ) {
         NavigationTab.entries.forEach { tab ->
             val isSelected = currentTab == tab
@@ -263,12 +274,14 @@ fun FloatingAudioBar(
     viewModel: IslamicViewModel,
     modifier: Modifier = Modifier
 ) {
-    val track = viewModel.audioPlayer.currentTrack
-    val state = viewModel.audioPlayer.playbackState
-    val isRepeat = viewModel.audioPlayer.isRepeatEnabled
+    val track by viewModel.audioPlayer.currentTrack.collectAsState()
+    val state by viewModel.audioPlayer.playbackState.collectAsState()
+    val isRepeat by viewModel.audioPlayer.isRepeatEnabled.collectAsState()
+    val positionMs by viewModel.audioPlayer.currentPositionMs.collectAsState()
+    val durationMs by viewModel.audioPlayer.durationMs.collectAsState()
 
     AnimatedVisibility(
-        visible = state.value != PlaybackState.IDLE,
+        visible = state != PlaybackState.IDLE,
         enter = slideInVertically(initialOffsetY = { it }),
         exit = slideOutVertically(targetOffsetY = { it }),
         modifier = modifier
@@ -276,100 +289,178 @@ fun FloatingAudioBar(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = 16.dp, vertical = 6.dp)
                 .testTag("floating_audio_bar"),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(18.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .padding(horizontal = 14.dp, vertical = 10.dp)
             ) {
+                // Top row: Track Info & Close
                 Row(
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primaryContainer),
-                        contentAlignment = Alignment.Center
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
                     ) {
-                        if (state.value == PlaybackState.BUFFERING) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.primary
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primaryContainer),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (state == PlaybackState.BUFFERING) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.VolumeUp,
+                                    contentDescription = "Audio playing",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(10.dp))
+
+                        Column {
+                            Text(
+                                text = "${track.surahName} • আয়াত ${track.ayahNumber}",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
-                        } else {
-                            Icon(
-                                imageVector = Icons.Default.VolumeUp,
-                                contentDescription = "Audio playing",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
+                            Text(
+                                text = track.reciterName,
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                                ),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    Column {
-                        Text(
-                            text = "${track.value.surahName} : আয়াত ${track.value.ayahNumber}",
-                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            text = track.value.reciterName,
-                            style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(
-                        onClick = { viewModel.audioPlayer.toggleRepeat() },
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Repeat,
-                            contentDescription = "Repeat",
-                            tint = if (isRepeat.value) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-
-                    IconButton(
-                        onClick = { viewModel.audioPlayer.togglePlayPause() },
-                        modifier = Modifier
-                            .size(40.dp)
-                            .background(MaterialTheme.colorScheme.primary, CircleShape)
-                    ) {
-                        Icon(
-                            imageVector = if (state.value == PlaybackState.PLAYING) Icons.Default.Pause else Icons.Default.PlayArrow,
-                            contentDescription = "Play/Pause",
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-
-                    IconButton(
-                        onClick = { viewModel.audioPlayer.stop() },
-                        modifier = Modifier.size(36.dp)
+                        onClick = { viewModel.stopAudio() },
+                        modifier = Modifier.size(32.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Close audio",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+
+                // Seek slider and duration row (if duration available)
+                if (durationMs > 0) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = formatDuration(positionMs),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Slider(
+                            value = positionMs.toFloat().coerceIn(0f, durationMs.toFloat()),
+                            onValueChange = { newPos -> viewModel.seekAudioTo(newPos.toInt()) },
+                            valueRange = 0f..durationMs.toFloat(),
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(horizontal = 8.dp)
+                                .height(24.dp),
+                            colors = SliderDefaults.colors(
+                                thumbColor = MaterialTheme.colorScheme.primary,
+                                activeTrackColor = MaterialTheme.colorScheme.primary,
+                                inactiveTrackColor = MaterialTheme.colorScheme.outlineVariant
+                            )
+                        )
+                        Text(
+                            text = formatDuration(durationMs),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                // Playback Controls Row: Prev, Play/Pause, Next, Repeat
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    IconButton(
+                        onClick = { viewModel.toggleAudioRepeat() },
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Repeat,
+                            contentDescription = "Repeat",
+                            tint = if (isRepeat) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
                             modifier = Modifier.size(20.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    IconButton(
+                        onClick = { viewModel.playPreviousAyah() },
+                        modifier = Modifier.size(38.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.SkipPrevious,
+                            contentDescription = "Previous Ayah",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    IconButton(
+                        onClick = { viewModel.toggleAudioPlayPause() },
+                        modifier = Modifier
+                            .size(44.dp)
+                            .background(MaterialTheme.colorScheme.primary, CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = if (state == PlaybackState.PLAYING) Icons.Default.Pause else Icons.Default.PlayArrow,
+                            contentDescription = "Play/Pause",
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(26.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    IconButton(
+                        onClick = { viewModel.playNextAyah() },
+                        modifier = Modifier.size(38.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.SkipNext,
+                            contentDescription = "Next Ayah",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                 }
@@ -377,3 +468,11 @@ fun FloatingAudioBar(
         }
     }
 }
+
+private fun formatDuration(ms: Int): String {
+    val totalSeconds = (ms / 1000).coerceAtLeast(0)
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
+    return String.format(java.util.Locale.US, "%d:%02d", minutes, seconds)
+}
+

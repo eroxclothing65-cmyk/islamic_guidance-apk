@@ -203,10 +203,16 @@ fun HomeScreen(
                                 }
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Column {
-                                    Text(
-                                        text = AppStrings.get("next_prayer", language),
-                                        style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    )
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = AppStrings.get("next_prayer", language),
+                                            style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        )
+                                        Text(
+                                            text = " • ${schedule.city}",
+                                            style = MaterialTheme.typography.labelSmall.copy(color = AccentGold, fontWeight = FontWeight.Bold)
+                                        )
+                                    }
                                     Text(
                                         text = if (language == AppLanguage.BENGALI) schedule.nextPrayerNameBn else schedule.nextPrayerNameEn,
                                         style = MaterialTheme.typography.titleMedium.copy(
